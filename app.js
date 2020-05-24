@@ -1,42 +1,34 @@
-const app = require('express')();
-const http = require('http').Server(app);
-const port = process.env.PORT || 3000;
+import cors from 'cors';
+import express from 'express';
+import http from 'http';
+import {
+  films,
+  people,
+  planets,
+  species,
+  starships,
+  transport,
+  vehicles,
+} from './fixtures/index.js';
+import { deepClone } from './utils/deepClone.js';
+import { orderedObject } from './utils/orderedObject.js';
 
-const cors = require('cors');
-const bodyParser = require('body-parser');
+const app = express();
+const httpServer = http.Server(app);
 
+// project constants
+const PORT = process.env.PORT || 3000;
 const ROWS_PER_PAGE = 10;
-const filmsData = require('./fixtures/films.json');
-const peopleData = require('./fixtures/people.json');
-const planetsData = require('./fixtures/planets.json');
-const speciesData = require('./fixtures/species.json');
-const starshipsData = require('./fixtures/starships.json');
-const transportData = require('./fixtures/transport.json');
-const vehiclesData = require('./fixtures/vehicles.json');
 
 // express app config
 app.use(cors());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send('Something broke!');
 });
-
-function generateRandomString(length = 10) {
-  const possibleCharacters =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let output = '';
-  for (let i = 0; i < length; i++) {
-    output += possibleCharacters.charAt(
-      Math.floor(Math.random() * possibleCharacters.length)
-    );
-  }
-  return output;
-}
-
-const deepClone = (data) => JSON.parse(JSON.stringify(data));
 
 const convertRelations = (fields) => {
   const output = deepClone(fields);
@@ -90,7 +82,7 @@ const prepareResults = (pageData, dataUrl) => {
     delete data.model;
     delete data.pk;
 
-    return convertRelations(data.fields);
+    return convertRelations(orderedObject(data.fields));
   });
 };
 
@@ -113,85 +105,85 @@ const preparePageData = (req, data, dataUrl) => {
   return { count, pages, next, previous, results };
 };
 
-app.get('/', (req, res) => res.send('Server works fine.'));
-app.get('/random-string', (req, res) => res.send(generateRandomString()));
+const prepareSingleResult = (data, dataUrl, id) => {
+  const pageData = deepClone(data);
+  const results = prepareResults(pageData, dataUrl);
+  return results.find((res) => res.url === `/api/${dataUrl}/${id}`);
+};
 
 app.get('/api/films', (req, res) => {
-  const response = preparePageData(req, filmsData, 'films');
-  response.characters = [];
-  response.planets = [];
-  response.starships = [];
-  response.vehicles = [];
-  response.species = [];
+  res.json(preparePageData(req, films, 'films'));
+});
 
-  res.json(response);
+app.get('/api/films/:id', (req, res) => {
+  res.json(prepareSingleResult(films, 'films', req.params.id));
 });
 
 app.get('/api/people', (req, res) => {
-  peopleData.forEach((data) => {
-    data.fields.species = speciesData
+  people.forEach((data) => {
+    data.fields.species = species
       .filter((space) => space.fields.people.includes(data.pk))
       .map((space) => space.pk);
 
-    data.fields.films = filmsData
+    data.fields.films = films
       .filter((film) => film.fields.planets.includes(data.pk))
       .map((film) => film.pk);
 
-    data.fields.vehicles = vehiclesData
+    data.fields.vehicles = vehicles
       .filter((vehicle) => vehicle.fields.pilots.includes(data.pk))
       .map((vehicle) => vehicle.pk);
 
-    data.fields.starships = starshipsData
+    data.fields.starships = starships
       .filter((starship) => starship.fields.pilots.includes(data.pk))
       .map((starship) => starship.pk);
   });
 
-  res.json(preparePageData(req, peopleData, 'people'));
+  res.json(preparePageData(req, people, 'people'));
 });
 
 app.get('/api/planets', (req, res) => {
-  planetsData.forEach((data) => {
-    data.fields.residents = peopleData
+  planets.forEach((data) => {
+    data.fields.residents = people
       .filter((character) => character.fields.homeworld === data.pk)
       .map((character) => character.pk);
 
-    data.fields.films = filmsData
+    data.fields.films = films
       .filter((film) => film.fields.planets.includes(data.pk))
       .map((film) => film.pk);
   });
 
-  res.json(preparePageData(req, planetsData, 'planets'));
+  res.json(preparePageData(req, planets, 'planets'));
 });
 
 app.get('/api/species', (req, res) => {
-  res.json(preparePageData(req, speciesData, 'species'));
+  res.json(preparePageData(req, species, 'species'));
 });
 
 app.get('/api/starships', (req, res) => {
-  starshipsData.forEach((data) => {
-    data.fields.films = filmsData
+  starships.forEach((data) => {
+    data.fields.films = films
       .filter((film) => film.fields.starships.includes(data.pk))
       .map((film) => film.pk);
   });
 
-  res.json(preparePageData(req, starshipsData, 'starships'));
+  res.json(preparePageData(req, starships, 'starships'));
 });
 
 app.get('/api/vehicles', (req, res) => {
-  vehiclesData.forEach((data) => {
-    data.fields.films = filmsData
+  vehicles.forEach((data) => {
+    data.fields.films = films
       .filter((film) => film.fields.vehicles.includes(data.pk))
       .map((film) => film.pk);
 
     data.fields = {
       ...data.fields,
-      ...transportData.find((transport) => transport.pk === data.pk).fields,
+      ...transport.find((transport) => transport.pk === data.pk).fields,
     };
   });
 
-  res.json(preparePageData(req, vehiclesData, 'vehicles'));
+  res.json(preparePageData(req, vehicles, 'vehicles'));
 });
 
-http.listen(port, function () {
-  console.log('listening on *:' + port);
+httpServer.listen(PORT, () => {
+  console.log('listening on *:' + PORT);
 });
