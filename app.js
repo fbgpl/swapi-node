@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express from 'express';
 import http from 'http';
+import path from 'path';
 import { prepareFixtures } from './fixtures/index.js';
 import { deepClone } from './utils/deepClone.js';
 
@@ -52,6 +53,12 @@ app.get(`${API_PATH}:fixtureName`, (req, res) => {
 app.get(`${API_PATH}:fixtureName/:id`, (req, res) => {
   const { fixtureName, id } = req.params;
   res.json(prepareSingleResult(fixtures[fixtureName], fixtureName, id));
+});
+
+// serve static react app
+app.use('/', express.static(path.resolve('./client/build')));
+app.get('*', (req, res) => {
+  res.sendFile(path.resolve('./client/build/index.html'));
 });
 
 httpServer.listen(PORT, () => {
