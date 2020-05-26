@@ -1,9 +1,12 @@
 import cors from 'cors';
 import express from 'express';
 import http from 'http';
-import path from 'path';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { prepareFixtures } from './fixtures/index.js';
 import { deepClone } from './utils/deepClone.js';
+
+const dirName = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const httpServer = http.Server(app);
@@ -56,9 +59,9 @@ app.get(`${API_PATH}:fixtureName/:id`, (req, res) => {
 });
 
 // serve static react app
-app.use('/', express.static(path.resolve('./client/build')));
+app.use('/', express.static(path.resolve(dirName, './client/build')));
 app.get('*', (req, res) => {
-  res.sendFile(path.resolve('./client/build/index.html'));
+  res.sendFile(path.resolve(dirName, './client/build/index.html'));
 });
 
 httpServer.listen(PORT, () => {

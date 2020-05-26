@@ -2,16 +2,18 @@
 import { css, jsx } from '@emotion/core';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
+import json from 'highlight.js/lib/languages/json';
 import html from 'highlight.js/lib/languages/xml';
-// import 'highlight.js/styles/github.css';
+import 'highlight.js/styles/github.css';
 import * as marked from 'marked';
 import { useEffect, useState } from 'react';
-import * as myMarkdownFile from './../README.md';
+import * as myMarkdownFile from './../../README.md';
 
-hljs.configure({ useBR: true });
+hljs.configure({ useBR: false });
 
 hljs.registerLanguage('javascript', javascript);
 hljs.registerLanguage('html', html);
+hljs.registerLanguage('json', json);
 
 const App = () => {
   const [text, setText] = useState('');
@@ -22,9 +24,9 @@ const App = () => {
       .then((response) => response.text())
       .then((text) => {
         setText(text);
-        // document.querySelectorAll('pre code').forEach((block) => {
-        //     hljs.highlightBlock(block);
-        // });
+        document.querySelectorAll('pre code').forEach((block) => {
+          hljs.highlightBlock(block);
+        });
       });
   }, []);
 
@@ -39,18 +41,9 @@ const App = () => {
         padding: 10px;
       `}
     >
-      {/* <textarea
-        css={css`
-          width: 45%;
-        `}
-        onChange={(e) => setText(e.target.value)}
-        value={text}
-      /> */}
-
       <div
         css={css`
           width: 90%;
-          /* border: 1px solid #ccc; */
         `}
         dangerouslySetInnerHTML={{ __html }}
       />
