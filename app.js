@@ -5,8 +5,6 @@ import path from 'path';
 import { prepareFixtures } from './fixtures/index.js';
 import { deepClone } from './utils/deepClone.js';
 
-// const dirName = dirname(fileURLToPath(import.meta.url));
-
 const app = express();
 const httpServer = http.Server(app);
 
@@ -58,10 +56,10 @@ app.get(`${API_PATH}:fixtureName/:id`, (req, res) => {
 });
 
 // serve static react app
-app.use('/', express.static(path.resolve(path.dirname(''), 'public/build')));
+app.use('/', express.static(path.resolve(path.dirname(''), 'client/build')));
 
 app.get('*', (req, res) => {
-  res.sendFile('./public/build/index.html', { root: path.dirname('') });
+  res.sendFile(path.resolve(path.dirname(''), './client/build/index.html'));
 });
 
 httpServer.listen(PORT, () => {
